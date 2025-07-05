@@ -6,33 +6,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Users, Calendar, MapPin, Trophy, CheckCircle, Clock, ExternalLink } from "lucide-react";
+import { ArrowLeft, Users, Calendar, MapPin, Trophy, CheckCircle, Clock } from "lucide-react";
 import axios from "axios";
 
 export default function EventManagementPage() {
   const params = useParams();
   const router = useRouter();
   const [event, setEvent] = useState<any>(null);
-  const [attendees, setAttendees] = useState<any[]>([]);
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [attendances, setAttendances] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [minting, setMinting] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchEventAndRegistrations() {
+    async function fetchEventAndData() {
       setLoading(true);
       setError(null);
       try {
         const eventRes = await axios.get(`/api/events?id=${params.id}`);
         setEvent(eventRes.data);
         const regRes = await axios.get(`/api/registrations?eventId=${params.id}`);
-        setAttendees(regRes.data);
+        setRegistrations(regRes.data);
+        const attRes = await axios.get(`/api/attendances?eventId=${params.id}`);
+        setAttendances(attRes.data);
       } catch (err: any) {
         setError(err.response?.data?.error || err.message || "Failed to fetch event or registrations");
       } finally {
         setLoading(false);
       }
     }
-    if (params.id) fetchEventAndRegistrations();
+    if (params.id) fetchEventAndData();
   }, [params.id]);
 
   const formatAddress = (address: string) => {
@@ -47,6 +51,28 @@ export default function EventManagementPage() {
       hour: "2-digit",
       minute: "2-digit"
     });
+  };
+
+  const handleConfirmAndMint = async (user_id: string) => {
+    setMinting(user_id);
+    try {
+      // Simulate NFT minting (replace with real logic as needed)
+      const fakeMintAddress = `0x${Math.random().toString(16).slice(2, 42)}`;
+      const fakeTx = `0x${Math.random().toString(16).slice(2, 66)}`;
+      await axios.post("/api/attendances", {
+        user_id,
+        event_id: params.id,
+        nft_mint_address: fakeMintAddress,
+        nft_transaction_signature: fakeTx
+      });
+      // Refetch attendances
+      const attRes = await axios.get(`/api/attendances?eventId=${params.id}`);
+      setAttendances(attRes.data);
+    } catch (err: any) {
+      alert(err.response?.data?.error || err.message || "Failed to confirm and mint NFT");
+    } finally {
+      setMinting(null);
+    }
   };
 
   if (loading) {
@@ -73,9 +99,8 @@ export default function EventManagementPage() {
   }
 
   const eventDate = new Date(event.date);
-  const registeredCount = attendees.length;
-  // All attendees from registrations table have status 'registered'
-  const confirmedCount = 0;
+  const registeredCount = registrations.length;
+  const confirmedCount = attendances.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -185,38 +210,75 @@ export default function EventManagementPage() {
                     <TableHead>Socials</TableHead>
                     <TableHead>Date Registered</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {attendees.map((attendee) => (
-                    <TableRow key={attendee.id}>
-                      <TableCell>
-                        <div className="font-mono text-xs">{attendee.user_id}</div>
-                      </TableCell>
-                      <TableCell>{attendee.email || "-"}</TableCell>
-                      <TableCell>
-                        {attendee.socials ? (
-                          <a href={attendee.socials} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs">
-                            {attendee.socials}
-                          </a>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell>{formatDate(attendee.created_at)}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                          <Clock className="h-3 w-3 mr-1" />
-                          Registered
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {registrations.map((reg) => {
+                    const attendance = attendances.find((a) => a.user_id === reg.user_id);
+                    return (
+                      <TableRow key={reg.id}>
+                        <TableCell>
+                          <div className="font-mono text-xs">{reg.user_id}</div>
+                        </TableCell>
+                        <TableCell>{reg.email || "-"}</TableCell>
+                        <TableCell>
+                          {reg.socials ? (
+                            <a href={reg.socials} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs">
+                              {reg.socials}
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell>{formatDate(reg.created_at)}</TableCell>
+                        <TableCell>
+                          {attendance ? (
+                            <Badge className="bg-green-50 text-green-700 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Confirmed
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Registered
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {attendance ? (
+                            <div className="space-y-1 text-xs">
+                              <div>Approved: {formatDate(attendance.created_at)}</div>
+                              <div className="font-semibold text-green-700">NFT Minted</div>
+                              <div className="font-mono">{attendance.nft_mint_address}</div>
+                              <div className="font-mono">{attendance.nft_transaction_signature}</div>
+                            </div>
+                          ) : (
+                            <Button
+                              size="sm"
+                              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                              disabled={minting === reg.user_id}
+                              onClick={() => handleConfirmAndMint(reg.user_id)}
+                            >
+                              {minting === reg.user_id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                                  Processing...
+                                </>
+                              ) : (
+                                <>Confirm & Mint NFT</>
+                              )}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
 
-            {attendees.length === 0 && (
+            {registrations.length === 0 && (
               <div className="text-center py-12">
                 <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No registrations yet</h3>
