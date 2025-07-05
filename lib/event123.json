@@ -1,0 +1,20 @@
+{
+  "name": "EventSeal: Web3 Summit 2025",
+  "description": "Proof of Attendance for Web3 Summit 2025, held in Bangalore. Verified by EventSeal.",
+  "image": "https://copper-hilarious-clam-626.mypinata.cloud/ipfs/bafkreidplhx2xud3is65j7dformzr523bbggfivngxa4pwsbxksu2xym2a",
+  "external_url": "https://web3ssh.abhiraj0x.me",
+  "attributes": [
+    {
+      "trait_type": "Event",
+      "value": "Web3 Summit 2025"
+    },
+    {
+      "trait_type": "Location",
+      "value": "Bangalore, India"
+    },
+    {
+      "trait_type": "Date",
+      "value": "2025-08-21"
+    }
+  ]
+}

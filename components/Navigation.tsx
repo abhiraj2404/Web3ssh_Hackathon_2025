@@ -7,6 +7,7 @@ import { ConnectButton } from "thirdweb/react";
 import { cn } from "@/lib/utils";
 import { client } from "@/config/client";
 import { useWalletUser } from "@/components/providers/WalletUserProvider";
+import { baseSepolia } from "thirdweb/chains";
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -58,6 +59,7 @@ export default function Navigation() {
 
           <ConnectButton
             client={client}
+            chain={baseSepolia}
             appMetadata={{
               name: "EventChain",
               url: "https://eventchain.example.com"

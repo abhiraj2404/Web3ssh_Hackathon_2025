@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Shield, Wallet, Trophy, ArrowRight, Check, Sparkles, Users, Lock } from "lucide-react";
 import { client } from "@/config/client";
 import { useWalletUser } from "@/components/providers/WalletUserProvider";
+import { baseSepolia } from "thirdweb/chains";
 
 export default function HomePage() {
   const wallet = useActiveWallet(); // undefined if not connected
@@ -69,6 +70,7 @@ export default function HomePage() {
                 <ConnectButton
                   theme="light"
                   client={client}
+                  chain={baseSepolia}
                   appMetadata={{
                     name: "EventChain",
                     url: "https://eventchain.example.com"

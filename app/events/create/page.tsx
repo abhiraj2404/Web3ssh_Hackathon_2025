@@ -11,6 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, MapPin, Clock, Users, Trophy, Upload, CheckCircle, ArrowRight, Sparkles } from "lucide-react";
 import { useWalletUser } from "@/components/providers/WalletUserProvider";
+import { prepareContractCall, getContract } from "thirdweb";
+import { useSendTransaction } from "thirdweb/react";
+import { client } from "@/config/client";
+import { EVENTMANAGER_CONTRACT_ADDRESS, eventManagerABI } from "@/config/abi";
+import { baseSepolia } from "thirdweb/chains";
+import { v4 as uuidv4 } from "uuid";
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -39,6 +45,14 @@ export default function CreateEventPage() {
   const eventFileInputRef = useRef<HTMLInputElement>(null);
   const nftFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Setup contract and transaction hook
+  const contract = getContract({
+    client,
+    chain: baseSepolia,
+    address: EVENTMANAGER_CONTRACT_ADDRESS
+  });
+  const { mutate: sendTransaction, isPending } = useSendTransaction();
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -62,6 +76,8 @@ export default function CreateEventPage() {
     setLoading(true);
     setError(null);
     try {
+      // Generate a random uuid for the event
+      const uuid = uuidv4();
       // Compose ISO date string
       const eventDate =
         formData.date && formData.time ? new Date(`${formData.date}T${formData.time}:00Z`).toISOString() : new Date().toISOString();
@@ -92,8 +108,61 @@ export default function CreateEventPage() {
         const { url } = await uploadRes.json();
         nft_image_url = url;
       }
+      console.log("uploading metadata uri");
+
+      // --- New: Create and upload metadata.json to Pinata ---
+      // Construct metadata object
+      const metadata = {
+        name: formData.nftName,
+        description: formData.nftDescription,
+        image: nft_image_url,
+        external_url: "https://web3ssh.abhiraj0x.me",
+        attributes: [
+          { trait_type: "Event", value: formData.title },
+          { trait_type: "Location", value: formData.location },
+          { trait_type: "Date", value: formData.date }
+        ]
+      };
+      // Create a unique filename for metadata
+      const metadataFile = new File([JSON.stringify(metadata)], `event-metadata-${Date.now()}.json`, { type: "application/json" });
+      // Upload metadata.json to Pinata
+      const metadataForm = new FormData();
+      metadataForm.set("file", metadataFile);
+      const metadataUploadRes = await fetch("/api/pinata-upload", {
+        method: "POST",
+        body: metadataForm
+      });
+      if (!metadataUploadRes.ok) throw new Error("Failed to upload metadata.json");
+      const { url: metadataURI } = await metadataUploadRes.json();
+      console.log("metadata uri", metadataURI);
+      // --- End new code ---
+
+      console.log("sending transaction");
+      // --- After metadataURI is obtained ---
+      // Prepare contract transaction for createEvent
+      const transaction = prepareContractCall({
+        contract,
+        method: "function createEvent(string uuid, string metadataURI, uint256 maxSupply)",
+        params: [uuid, metadataURI, formData.maxAttendees ? BigInt(formData.maxAttendees) : BigInt(0)],
+        value: BigInt(0)
+      });
+      // Send the transaction and wait for confirmation
+      let txHash = null;
+      await new Promise((resolve, reject) => {
+        sendTransaction(transaction as any, {
+          onSuccess: (result) => {
+            txHash = result?.transactionHash || null;
+            console.log("transaction hash", txHash);
+            resolve(result);
+          },
+          onError: reject
+        });
+      });
+      // --- End contract call ---
+
       // Prepare event data
       const eventPayload = {
+        id: uuid,
         title: formData.title,
         description: formData.description,
         date: eventDate,
@@ -102,10 +171,10 @@ export default function CreateEventPage() {
         nft_name: formData.nftName,
         nft_symbol: formData.nftSymbol,
         nft_image_url,
-        nft_collection: formData.nftName,
+        nft_collection: metadataURI,
         creator_id: user?.id,
-        on_chain_tx_signature: null,
-        max_attendee: formData.maxAttendees ? parseInt(formData.maxAttendees) : 0,
+        on_chain_tx_signature: txHash,
+        max_attendee: formData.maxAttendees ? Number(formData.maxAttendees) : 0,
         category: formData.category
       };
       const res = await fetch("/api/events", {

@@ -8,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Users, Calendar, MapPin, Trophy, CheckCircle, Clock } from "lucide-react";
 import axios from "axios";
+import { prepareContractCall, getContract } from "thirdweb";
+import { useSendTransaction } from "thirdweb/react";
+import { client } from "@/config/client";
+import { EVENTMANAGER_CONTRACT_ADDRESS, eventManagerABI } from "@/config/abi";
+import { baseSepolia } from "thirdweb/chains";
 
 export default function EventManagementPage() {
   const params = useParams();
@@ -18,6 +23,14 @@ export default function EventManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [minting, setMinting] = useState<string | null>(null);
+
+  // Setup contract and transaction hook
+  const contract = getContract({
+    client,
+    chain: baseSepolia,
+    address: EVENTMANAGER_CONTRACT_ADDRESS
+  });
+  const { mutate: sendTransaction } = useSendTransaction();
 
   useEffect(() => {
     async function fetchEventAndData() {
@@ -56,19 +69,47 @@ export default function EventManagementPage() {
   const handleConfirmAndMint = async (user_id: string) => {
     setMinting(user_id);
     try {
-      // Simulate NFT minting (replace with real logic as needed)
-      const fakeMintAddress = `0x${Math.random().toString(16).slice(2, 42)}`;
-      const fakeTx = `0x${Math.random().toString(16).slice(2, 66)}`;
+      // Fetch the user's wallet address from the API
+      const userRes = await axios.get(`/api/users?id=${user_id}`);
+      console.log("user response", userRes);
+      const userWallet = userRes.data?.walletAddress;
+      if (!userWallet) throw new Error("User wallet address not found");
+
+      console.log(event);
+      console.log("sending mint transaction");
+      // Prepare contract transaction for mintToAttendee
+      const transaction = prepareContractCall({
+        contract,
+        method: "function mintToAttendee(string uuid, address attendee, uint256 amount)",
+        params: [event.id, userWallet, BigInt(1)],
+        value: BigInt(0)
+      });
+      let txHash = null;
+      await new Promise((resolve, reject) => {
+        sendTransaction(transaction as any, {
+          onSuccess: (result) => {
+            txHash = result?.transactionHash || null;
+            console.log("mint txn hash", txHash);
+            resolve(result);
+          },
+          onError: (error) => {
+            console.log("error in mint txn hash", error);
+            reject(error);
+          }
+        });
+      });
+
       await axios.post("/api/attendances", {
         user_id,
         event_id: params.id,
-        nft_mint_address: fakeMintAddress,
-        nft_transaction_signature: fakeTx
+        nft_mint_address: userWallet,
+        nft_transaction_signature: txHash
       });
       // Refetch attendances
       const attRes = await axios.get(`/api/attendances?eventId=${params.id}`);
       setAttendances(attRes.data);
     } catch (err: any) {
+      console.log("error: in confirm and mint", error);
       alert(err.response?.data?.error || err.message || "Failed to confirm and mint NFT");
     } finally {
       setMinting(null);
@@ -237,7 +278,7 @@ export default function EventManagementPage() {
                             <Badge className="bg-green-50 text-green-700 border-green-200">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Confirmed
-                            </Badge>  
+                            </Badge>
                           ) : (
                             <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                               <Clock className="h-3 w-3 mr-1" />
