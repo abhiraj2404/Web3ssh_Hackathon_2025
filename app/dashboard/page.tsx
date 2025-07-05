@@ -1,63 +1,75 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Calendar, 
-  Plus, 
-  Users, 
-  Trophy, 
-  TrendingUp,
-  Eye,
-  Edit,
-  BarChart3,
-  CheckCircle,
-  Clock
-} from 'lucide-react';
-import EventCard from '@/components/EventCard';
-import { mockUserEvents, mockNFTs } from '@/lib/mockData';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, Plus, Users, Trophy, TrendingUp, Eye, Edit, BarChart3, CheckCircle, Clock } from "lucide-react";
+import EventCard from "@/components/EventCard";
+import { mockNFTs } from "@/lib/mockData";
+import { useWalletUser } from "@/components/providers/WalletUserProvider";
+import axios from "axios";
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState('events');
+  const [activeTab, setActiveTab] = useState("events");
+  const { account, user } = useWalletUser() as any;
+  const [userEvents, setUserEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const stats = [
     {
-      title: 'Total Events',
-      value: '12',
-      change: '+3 this month',
+      title: "Total Events",
+      value: "12",
+      change: "+3 this month",
       icon: Calendar,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
     },
     {
-      title: 'Total Registrations',
-      value: '2,847',
-      change: '+12% from last month',
+      title: "Total Registrations",
+      value: "2,847",
+      change: "+12% from last month",
       icon: Users,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: "text-green-600",
+      bgColor: "bg-green-50"
     },
     {
-      title: 'NFTs Minted',
-      value: '1,234',
-      change: '+567 this month',
+      title: "NFTs Minted",
+      value: "1,234",
+      change: "+567 this month",
       icon: Trophy,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
     },
     {
-      title: 'Revenue',
-      value: '$12,450',
-      change: '+25% from last month',
+      title: "Revenue",
+      value: "$12,450",
+      change: "+25% from last month",
       icon: TrendingUp,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-    },
+      color: "text-orange-600",
+      bgColor: "bg-orange-50"
+    }
   ];
+
+  useEffect(() => {
+    async function fetchUserEvents() {
+      if (!user?.id) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await axios.get(`/api/events?userId=${user.id}`);
+        setUserEvents(res.data);
+      } catch (err: any) {
+        setError(err.response?.data?.error || err.message || "Failed to fetch your events");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUserEvents();
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
@@ -66,19 +78,12 @@ export default function DashboardPage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                Dashboard
-              </h1>
-              <p className="text-purple-100">
-                Manage your events and track performance
-              </p>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">Dashboard</h1>
+              <p className="text-purple-100">Manage your events and track performance</p>
             </div>
-            
+
             <Link href="/events/create">
-              <Button 
-                size="lg"
-                className="bg-white text-purple-600 hover:bg-white/90 shadow-lg"
-              >
+              <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90 shadow-lg">
                 <Plus className="h-5 w-5 mr-2" />
                 Create Event
               </Button>
@@ -93,20 +98,14 @@ export default function DashboardPage() {
           {stats.map((stat, index) => (
             <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  {stat.title}
-                </CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
                 <div className={`p-2 rounded-lg ${stat.bgColor}`}>
                   <stat.icon className={`h-4 w-4 ${stat.color}`} />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900 mb-1">
-                  {stat.value}
-                </div>
-                <p className="text-xs text-gray-500">
-                  {stat.change}
-                </p>
+                <div className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
+                <p className="text-xs text-gray-500">{stat.change}</p>
               </CardContent>
             </Card>
           ))}
@@ -123,14 +122,10 @@ export default function DashboardPage() {
           <TabsContent value="events" className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Your Events
-                </h2>
-                <p className="text-gray-600">
-                  Events you've created and are managing
-                </p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Events</h2>
+                <p className="text-gray-600">Events you've created and are managing</p>
               </div>
-              
+
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
                   <Eye className="h-4 w-4 mr-2" />
@@ -143,15 +138,21 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {mockUserEvents.length === 0 ? (
+            {loading ? (
               <Card className="p-12 text-center">
                 <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No events yet
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Start creating your first event to build your community
-                </p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Loading your events...</h3>
+              </Card>
+            ) : error ? (
+              <Card className="p-12 text-center">
+                <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-red-600 mb-2">{error}</h3>
+              </Card>
+            ) : userEvents.length === 0 ? (
+              <Card className="p-12 text-center">
+                <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No events yet</h3>
+                <p className="text-gray-600 mb-6">Start creating your first event to build your community</p>
                 <Link href="/events/create">
                   <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
                     <Plus className="h-4 w-4 mr-2" />
@@ -161,12 +162,8 @@ export default function DashboardPage() {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {mockUserEvents.map((event) => (
-                  <EventCard 
-                    key={event.id} 
-                    event={event} 
-                    variant="dashboard"
-                  />
+                {userEvents.map((event) => (
+                  <EventCard key={event.id} event={event} variant="dashboard" />
                 ))}
               </div>
             )}
@@ -174,36 +171,22 @@ export default function DashboardPage() {
 
           <TabsContent value="nfts" className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Your NFT Collection
-              </h2>
-              <p className="text-gray-600">
-                Proof-of-attendance NFTs from events you've attended
-              </p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Your NFT Collection</h2>
+              <p className="text-gray-600">Proof-of-attendance NFTs from events you've attended</p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {mockNFTs.map((nft) => (
                 <Card key={nft.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                   <div className="aspect-square bg-gradient-to-br from-purple-500 to-blue-600 relative">
-                    <img
-                      src={nft.imageUrl}
-                      alt={nft.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={nft.imageUrl} alt={nft.name} className="w-full h-full object-cover" />
                     <div className="absolute top-2 right-2">
-                      <Badge className="bg-black/50 text-white">
-                        NFT
-                      </Badge>
+                      <Badge className="bg-black/50 text-white">NFT</Badge>
                     </div>
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                      {nft.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-3">
-                      {nft.description}
-                    </p>
+                    <h3 className="font-semibold text-gray-900 mb-2">{nft.name}</h3>
+                    <p className="text-sm text-gray-600 mb-3">{nft.description}</p>
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>Minted: {new Date(nft.attendedAt).toLocaleDateString()}</span>
                       <Badge variant="outline" className="text-xs">
@@ -219,12 +202,8 @@ export default function DashboardPage() {
 
           <TabsContent value="analytics" className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Analytics Overview
-              </h2>
-              <p className="text-gray-600">
-                Track your event performance and engagement
-              </p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics Overview</h2>
+              <p className="text-gray-600">Track your event performance and engagement</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">

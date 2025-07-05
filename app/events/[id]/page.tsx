@@ -1,41 +1,75 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { 
-  Calendar, 
-  MapPin, 
-  User, 
-  Clock, 
-  Users, 
-  Trophy, 
-  ArrowLeft,
-  Check,
-  Heart,
-  Share2,
-  ExternalLink
-} from 'lucide-react';
-import { mockEvents } from '@/lib/mockData';
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Calendar, MapPin, User, Clock, Users, Trophy, ArrowLeft, Check, Heart, Share2, ExternalLink } from "lucide-react";
+import axios from "axios";
 
 export default function EventDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const [isRegistered, setIsRegistered] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [event, setEvent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [host, setHost] = useState<any>(null);
+  const [hostLoading, setHostLoading] = useState(true);
+  const [hostError, setHostError] = useState<string | null>(null);
 
-  const event = mockEvents.find(e => e.id === params.id);
+  useEffect(() => {
+    async function fetchEvent() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await axios.get(`/api/events?id=${params.id}`);
+        setEvent(res.data);
+        console.log(res.data.image_url);
+      } catch (err: any) {
+        setError(err.response?.data?.error || err.message || "Failed to fetch event");
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (params.id) fetchEvent();
+  }, [params.id]);
 
-  if (!event) {
+  useEffect(() => {
+    async function fetchHost() {
+      if (!event?.creator_id) return;
+      setHostLoading(true);
+      setHostError(null);
+      try {
+        const res = await axios.get(`/api/users?id=${event.creator_id}`);
+        setHost(res.data);
+      } catch (err: any) {
+        setHostError(err.response?.data?.error || err.message || "Failed to fetch host");
+      } finally {
+        setHostLoading(false);
+      }
+    }
+    if (event?.creator_id) fetchHost();
+  }, [event?.creator_id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
+        <div className="text-white text-lg">Loading event...</div>
+      </div>
+    );
+  }
+
+  if (error || !event) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 flex items-center justify-center">
         <div className="text-center text-white">
           <h1 className="text-2xl font-bold mb-2">Event Not Found</h1>
-          <p className="text-gray-300 mb-4">The event you're looking for doesn't exist.</p>
-          <Button onClick={() => router.push('/events')} variant="outline">
+          <p className="text-gray-300 mb-4">{error || "The event you're looking for doesn't exist."}</p>
+          <Button onClick={() => router.push("/events")} variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Events
           </Button>
@@ -46,8 +80,8 @@ export default function EventDetailsPage() {
 
   const eventDate = new Date(event.date);
   const isUpcoming = eventDate > new Date();
-  const spotsRemaining = event.maxAttendees ? event.maxAttendees - event.registrations : null;
-  const progressPercentage = event.maxAttendees ? (event.registrations / event.maxAttendees) * 100 : 0;
+  const spotsRemaining = event.max_attendee ? event.max_attendee - (event.registrations || 0) : null;
+  const progressPercentage = event.max_attendee ? ((event.registrations || 0) / event.max_attendee) * 100 : 0;
 
   const handleRegister = () => {
     setIsRegistered(true);
@@ -61,7 +95,7 @@ export default function EventDetailsPage() {
     navigator.share?.({
       title: event.title,
       text: event.description,
-      url: window.location.href,
+      url: window.location.href
     }) || navigator.clipboard.writeText(window.location.href);
   };
 
@@ -69,17 +103,17 @@ export default function EventDetailsPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
       {/* Header */}
       <div className="relative">
-        <div 
+        <div
           className="h-80 bg-cover bg-center relative"
           style={{
-            backgroundImage: event.imageUrl ? `url(${event.imageUrl})` : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            backgroundImage: event.image_url ? `url(${event.image_url})` : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
           }}
         >
           <div className="absolute inset-0 bg-black/50"></div>
           <div className="absolute top-6 left-6">
-            <Button 
+            <Button
               onClick={() => router.back()}
-              variant="outline" 
+              variant="outline"
               size="sm"
               className="bg-black/20 border-white/20 text-white hover:bg-black/40 backdrop-blur-sm"
             >
@@ -88,12 +122,10 @@ export default function EventDetailsPage() {
             </Button>
           </div>
         </div>
-        
+
         <div className="absolute bottom-0 left-0 right-0 p-6">
           <div className="container mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              {event.title}
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{event.title}</h1>
           </div>
         </div>
       </div>
@@ -110,17 +142,17 @@ export default function EventDetailsPage() {
                   <div className="text-white">
                     <div className="text-sm text-gray-300">Date & Time</div>
                     <div className="font-semibold">
-                      {eventDate.toLocaleDateString('en-US', { 
-                        month: 'numeric', 
-                        day: 'numeric', 
-                        year: 'numeric' 
+                      {eventDate.toLocaleDateString("en-US", {
+                        month: "numeric",
+                        day: "numeric",
+                        year: "numeric"
                       })}
                     </div>
                     <div className="text-sm">
-                      {eventDate.toLocaleTimeString('en-US', { 
-                        hour: 'numeric', 
-                        minute: '2-digit',
-                        hour12: true 
+                      {eventDate.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true
                       })}
                     </div>
                   </div>
@@ -191,15 +223,23 @@ export default function EventDetailsPage() {
                 <CardTitle className="text-white text-xl">About the host</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
-                    <User className="h-6 w-6 text-white" />
+                {hostLoading ? (
+                  <div className="text-gray-300">Loading host...</div>
+                ) : hostError ? (
+                  <div className="text-red-400">{hostError}</div>
+                ) : host ? (
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+                      <User className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-white font-semibold">{host.name || "Unknown Host"}</div>
+                      <div className="text-gray-400 text-sm">{host.walletAddress}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-white font-semibold">EventChain</div>
-                    <div className="text-gray-400 text-sm">Event organizer on EventChain</div>
-                  </div>
-                </div>
+                ) : (
+                  <div className="text-gray-300">Host not found</div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -214,33 +254,30 @@ export default function EventDetailsPage() {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-white text-sm">Spots remaining</span>
                       <span className="text-white font-semibold">
-                        {spotsRemaining} of {event.maxAttendees}
+                        {spotsRemaining} of {event.max_attendee}
                       </span>
                     </div>
                     <Progress value={progressPercentage} className="h-2" />
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-2 text-gray-300 mb-6">
                   <Users className="h-4 w-4" />
                   <span className="text-sm">{event.registrations} people registered</span>
                 </div>
 
                 {isRegistered ? (
-                  <Button 
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    disabled
-                  >
+                  <Button className="w-full bg-green-600 hover:bg-green-700 text-white" disabled>
                     <Check className="h-4 w-4 mr-2" />
                     Registered
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     onClick={handleRegister}
                     className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                     disabled={!isUpcoming}
                   >
-                    {isUpcoming ? 'Register Now' : 'Event Ended'}
+                    {isUpcoming ? "Register Now" : "Event Ended"}
                   </Button>
                 )}
 
@@ -251,21 +288,11 @@ export default function EventDetailsPage() {
                 )}
 
                 <div className="flex gap-2 mt-4">
-                  <Button 
-                    onClick={handleSave}
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 border-white/20 text-white hover:bg-white/10"
-                  >
-                    <Heart className={`h-4 w-4 mr-2 ${isSaved ? 'fill-current text-red-500' : ''}`} />
-                    {isSaved ? 'Saved' : 'Save'}
+                  <Button onClick={handleSave} variant="outline" size="sm" className="flex-1 border-white/20 text-white hover:bg-white/10">
+                    <Heart className={`h-4 w-4 mr-2 ${isSaved ? "fill-current text-red-500" : ""}`} />
+                    {isSaved ? "Saved" : "Save"}
                   </Button>
-                  <Button 
-                    onClick={handleShare}
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 border-white/20 text-white hover:bg-white/10"
-                  >
+                  <Button onClick={handleShare} variant="outline" size="sm" className="flex-1 border-white/20 text-white hover:bg-white/10">
                     <Share2 className="h-4 w-4 mr-2" />
                     Share
                   </Button>
@@ -284,8 +311,8 @@ export default function EventDetailsPage() {
                     <Trophy className="h-8 w-8 text-white" />
                   </div>
                   <div>
-                    <div className="text-white font-semibold">{event.nftName}</div>
-                    <div className="text-gray-400 text-sm">Symbol: {event.nftSymbol}</div>
+                    <div className="text-white font-semibold">{event.nft_name}</div>
+                    <div className="text-gray-400 text-sm">Symbol: {event.nft_symbol}</div>
                   </div>
                 </div>
               </CardContent>

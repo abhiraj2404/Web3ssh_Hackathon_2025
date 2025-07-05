@@ -13,7 +13,7 @@ interface EventCardProps {
     description: string;
     date: string;
     location: string;
-    imageUrl?: string;
+    image_url?: string;
     nftName: string;
     registrations: number;
     maxAttendees?: number;
@@ -32,12 +32,12 @@ export default function EventCard({ event, showActions = true, variant = 'defaul
         <div 
           className="h-48 bg-gradient-to-br from-purple-500 to-blue-600 relative overflow-hidden"
           style={{
-            backgroundImage: event.imageUrl ? `url(${event.imageUrl})` : undefined,
+            backgroundImage: event.image_url ? `url(${event.image_url})` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         >
-          {!event.imageUrl && (
+          {!event.image_url && (
             <div className="absolute inset-0 flex items-center justify-center">
               <Calendar className="h-12 w-12 text-white/80" />
             </div>

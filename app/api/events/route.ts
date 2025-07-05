@@ -1,18 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-// GET /api/events?userId=...
+// GET /api/events?userId=... or /api/events?id=...
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get("userId");
+  const eventId = searchParams.get("id");
 
-  let query = supabase.from("events").select("*").order("date", { ascending: true });
-  if (userId) {
+  let query = supabase.from("events").select("*");
+  if (eventId) {
+    query = query.eq("id", eventId);
+  } else if (userId) {
     query = query.eq("creator_id", userId);
+  } else {
+    query = query.order("date", { ascending: true });
   }
   const { data, error } = await query;
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  // If eventId, return single event (or null)
+  if (eventId) {
+    return NextResponse.json(data && data.length > 0 ? data[0] : null);
   }
   return NextResponse.json(data);
 }
