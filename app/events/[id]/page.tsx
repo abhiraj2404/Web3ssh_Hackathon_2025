@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Calendar, MapPin, User, Clock, Users, Trophy, ArrowLeft, Check, Heart, Share2, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, User, Users, Trophy, ArrowLeft, Check, Heart, Share2 } from "lucide-react";
 import axios from "axios";
 import { useWalletUser } from "@/components/providers/WalletUserProvider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -312,7 +310,6 @@ export default function EventDetailsPage() {
                         {spotsRemaining} of {event.max_attendee}
                       </span>
                     </div>
-                    <Progress value={progressPercentage} className="h-2" />
                   </div>
                 )}
 

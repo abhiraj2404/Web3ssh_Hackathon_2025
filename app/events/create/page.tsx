@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,12 @@ export default function CreateEventPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [eventImage, setEventImage] = useState<File | null>(null);
+  const [eventImagePreview, setEventImagePreview] = useState<string | null>(null);
+  const [nftImage, setNftImage] = useState<File | null>(null);
+  const [nftImagePreview, setNftImagePreview] = useState<string | null>(null);
+  const eventFileInputRef = useRef<HTMLInputElement>(null);
+  const nftFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -59,9 +65,33 @@ export default function CreateEventPage() {
       // Compose ISO date string
       const eventDate =
         formData.date && formData.time ? new Date(`${formData.date}T${formData.time}:00Z`).toISOString() : new Date().toISOString();
-      // Dummy image URLs
-      const image_url = "https://firebasestorage.googleapis.com/v0/b/clipify-back.appspot.com/o/clips%2FQzLRqxzZirMeAZlGxm45%2FScreenshot%202024-06-22%20142704.png?alt=media&token=67c7c25d-2ce6-42c7-a8b4-5d25d3d655dd";
-      const nft_image_url = "https://firebasestorage.googleapis.com/v0/b/clipify-back.appspot.com/o/clips%2FQzLRqxzZirMeAZlGxm45%2FScreenshot%202024-06-22%20142704.png?alt=media&token=67c7c25d-2ce6-42c7-a8b4-5d25d3d655dd";
+
+      // Upload event image to Pinata if selected
+      let image_url = eventImagePreview;
+      if (eventImage) {
+        const data = new FormData();
+        data.set("file", eventImage);
+        const uploadRes = await fetch("/api/pinata-upload", {
+          method: "POST",
+          body: data
+        });
+        if (!uploadRes.ok) throw new Error("Failed to upload event image");
+        const { url } = await uploadRes.json();
+        image_url = url;
+      }
+      // Upload NFT image to Pinata if selected
+      let nft_image_url = nftImagePreview;
+      if (nftImage) {
+        const data = new FormData();
+        data.set("file", nftImage);
+        const uploadRes = await fetch("/api/pinata-upload", {
+          method: "POST",
+          body: data
+        });
+        if (!uploadRes.ok) throw new Error("Failed to upload NFT image");
+        const { url } = await uploadRes.json();
+        nft_image_url = url;
+      }
       // Prepare event data
       const eventPayload = {
         title: formData.title,
@@ -93,6 +123,36 @@ export default function CreateEventPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEventImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEventImage(file);
+      setEventImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleNftImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNftImage(file);
+      setNftImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleEventImageRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEventImage(null);
+    setEventImagePreview(null);
+    if (eventFileInputRef.current) eventFileInputRef.current.value = "";
+  };
+
+  const handleNftImageRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNftImage(null);
+    setNftImagePreview(null);
+    if (nftFileInputRef.current) nftFileInputRef.current.value = "";
   };
 
   const steps = [
@@ -274,6 +334,34 @@ export default function CreateEventPage() {
                     </div>
                   )}
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Event Image</Label>
+                  <div
+                    className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-purple-400 transition-colors"
+                    onClick={() => eventFileInputRef.current?.click()}
+                  >
+                    {eventImagePreview ? (
+                      <div className="relative flex justify-center">
+                        <img alt="Event Preview" className="max-h-[200px] mx-auto rounded-lg object-cover" src={eventImagePreview} />
+                        <Button className="absolute top-2 right-2" variant="secondary" size="sm" onClick={handleEventImageRemove}>
+                          Change Image
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <Upload className="w-8 h-8 text-purple-500" />
+                        <div className="text-lg font-semibold">Drag and drop or browse files</div>
+                        <div className="text-xs text-muted-foreground">
+                          Max size: 50MB
+                          <br />
+                          JPG, PNG, GIF, SVG
+                        </div>
+                      </div>
+                    )}
+                    <input ref={eventFileInputRef} accept="image/*" className="hidden" type="file" onChange={handleEventImageChange} />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -335,13 +423,29 @@ export default function CreateEventPage() {
 
                 <div className="space-y-2">
                   <Label>NFT Image</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-sm text-gray-600 mb-2">Upload NFT image or it will be auto-generated</p>
-                    <Button variant="outline" size="sm">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Image
-                    </Button>
+                  <div
+                    className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-purple-400 transition-colors"
+                    onClick={() => nftFileInputRef.current?.click()}
+                  >
+                    {nftImagePreview ? (
+                      <div className="relative flex justify-center">
+                        <img alt="NFT Preview" className="max-h-[200px] mx-auto rounded-lg object-cover" src={nftImagePreview} />
+                        <Button className="absolute top-2 right-2" variant="secondary" size="sm" onClick={handleNftImageRemove}>
+                          Change Image
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <Upload className="w-8 h-8 text-purple-500" />
+                        <div className="text-lg font-semibold">Drag and drop or browse files</div>
+                        <div className="text-xs text-muted-foreground">
+                          Max size: 50MB
+                          <br />
+                          JPG, PNG, GIF, SVG
+                        </div>
+                      </div>
+                    )}
+                    <input ref={nftFileInputRef} accept="image/*" className="hidden" type="file" onChange={handleNftImageChange} />
                   </div>
                 </div>
 
