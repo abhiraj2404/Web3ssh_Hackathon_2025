@@ -325,12 +325,24 @@ export default function CreateEventPage() {
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="date">Date *</Label>
-                    <Input id="date" type="date" value={formData.date} onChange={(e) => handleInputChange("date", e.target.value)} />
+                    <input
+                      id="date"
+                      type="date"
+                      className="w-full border rounded px-3 py-2 bg-gray-900 text-white"
+                      value={formData.date}
+                      onChange={(e) => handleInputChange("date", e.target.value)}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="time">Time *</Label>
-                    <Input id="time" type="time" value={formData.time} onChange={(e) => handleInputChange("time", e.target.value)} />
+                    <input
+                      id="time"
+                      type="time"
+                      className="w-full border rounded px-3 py-2 bg-gray-900 text-white"
+                      value={formData.time}
+                      onChange={(e) => handleInputChange("time", e.target.value)}
+                    />
                   </div>
 
                   <div className="space-y-2">
