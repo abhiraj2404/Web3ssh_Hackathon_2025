@@ -8,10 +8,13 @@ import { Badge } from "@/components/ui/badge";
 
 import { Calendar, Shield, Wallet, Trophy, ArrowRight, Check, Sparkles, Users, Lock } from "lucide-react";
 import { client } from "@/config/client";
+import { useWalletUser } from "@/components/providers/WalletUserProvider";
 
 export default function HomePage() {
   const wallet = useActiveWallet(); // undefined if not connected
   const isConnected = !!wallet;
+  console.log(isConnected);
+  const { account, user } = useWalletUser() as any;
 
   const features = [
     {
@@ -62,7 +65,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              {!isConnected ? (
+              {!account?.address ? (
                 <ConnectButton
                   theme="light"
                   client={client}
@@ -74,7 +77,7 @@ export default function HomePage() {
               ) : (
                 <div className="flex flex-col sm:flex-row gap-4 items-center">
                   <Link href="/events/create">
-                    <Button
+                    <Button 
                       size="lg"
                       className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-6 text-lg font-semibold shadow-2xl"
                     >

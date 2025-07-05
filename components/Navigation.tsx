@@ -6,9 +6,12 @@ import { Wallet, Calendar, Home, Plus, User, LogOut } from "lucide-react";
 import { ConnectButton } from "thirdweb/react";
 import { cn } from "@/lib/utils";
 import { client } from "@/config/client";
+import { useWalletUser } from "@/components/providers/WalletUserProvider";
 
 export default function Navigation() {
   const pathname = usePathname();
+  const { account, user } = useWalletUser();
+  console.log(user);
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
@@ -44,6 +47,15 @@ export default function Navigation() {
         </div>
 
         <div className="flex items-center space-x-4">
+          {account?.address ? (
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-foreground/80">
+                {user && user.name ? user.name : account?.address ? account.address.slice(0, 6) + "..." + account.address.slice(-4) : ""}
+              </span>
+              {/* Optionally add a disconnect button here if available in your thirdweb version */}
+            </div>
+          ) : null}
+
           <ConnectButton
             client={client}
             appMetadata={{
