@@ -1,13 +1,14 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import Navigation from '@/components/Navigation';
+import "./globals.css";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import Navigation from "@/components/Navigation";
+import { Providers } from "./providers";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'EventChain - Decentralized Event Platform',
-  description: 'Create and manage blockchain-powered events with NFT rewards',
+  title: "EventChain - Decentralized Event Platform",
+  description: "Create and manage blockchain-powered events with NFT rewards",
 };
 
 export default function RootLayout({
@@ -18,8 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Navigation />
-        <main>{children}</main>
+        <Providers>
+          <Navigation />
+          <main>{children}</main>
+        </Providers>
       </body>
     </html>
   );

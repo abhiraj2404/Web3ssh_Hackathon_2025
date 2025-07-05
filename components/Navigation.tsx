@@ -1,26 +1,28 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Wallet, Calendar, Home, Plus, User, LogOut } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Wallet, Calendar, Home, Plus, User, LogOut } from "lucide-react";
+import { ConnectButton } from "thirdweb/react";
+import { cn } from "@/lib/utils";
+import { client } from "@/config/client";
 
 export default function Navigation() {
   const pathname = usePathname();
   const [isConnected, setIsConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState('');
+  const [walletAddress, setWalletAddress] = useState("");
 
   const connectWallet = async () => {
     // Mock wallet connection
     setIsConnected(true);
-    setWalletAddress('0x1234...5678');
+    setWalletAddress("0x1234...5678");
   };
 
   const disconnectWallet = () => {
     setIsConnected(false);
-    setWalletAddress('');
+    setWalletAddress("");
   };
 
   const formatAddress = (address: string) => {
@@ -28,9 +30,9 @@ export default function Navigation() {
   };
 
   const navItems = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/events', label: 'Events', icon: Calendar },
-    { href: '/dashboard', label: 'Dashboard', icon: User },
+    { href: "/", label: "Home", icon: Home },
+    { href: "/events", label: "Events", icon: Calendar },
+    { href: "/dashboard", label: "Dashboard", icon: User },
   ];
 
   return (
@@ -45,7 +47,7 @@ export default function Navigation() {
               EventChain
             </span>
           </Link>
-          
+
           <div className="hidden md:flex items-center space-x-6">
             {navItems.map((item) => (
               <Link
@@ -69,7 +71,9 @@ export default function Navigation() {
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-sm">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="font-medium">{formatAddress(walletAddress)}</span>
+                <span className="font-medium">
+                  {formatAddress(walletAddress)}
+                </span>
               </div>
               <Button
                 onClick={disconnectWallet}
@@ -82,10 +86,13 @@ export default function Navigation() {
               </Button>
             </div>
           ) : (
-            <Button onClick={connectWallet} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-              <Wallet className="h-4 w-4 mr-2" />
-              Connect Wallet
-            </Button>
+            <ConnectButton
+              client={client}
+              appMetadata={{
+                name: "EventChain",
+                url: "https://eventchain.example.com",
+              }}
+            />
           )}
         </div>
       </div>
