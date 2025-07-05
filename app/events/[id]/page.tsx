@@ -8,10 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, MapPin, User, Clock, Users, Trophy, ArrowLeft, Check, Heart, Share2, ExternalLink } from "lucide-react";
 import axios from "axios";
+import { useWalletUser } from "@/components/providers/WalletUserProvider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export default function EventDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const { account, user } = useWalletUser() as any;
   const [isRegistered, setIsRegistered] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [event, setEvent] = useState<any>(null);
@@ -20,6 +24,14 @@ export default function EventDetailsPage() {
   const [host, setHost] = useState<any>(null);
   const [hostLoading, setHostLoading] = useState(true);
   const [hostError, setHostError] = useState<string | null>(null);
+  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [regLoading, setRegLoading] = useState(true);
+  const [regError, setRegError] = useState<string | null>(null);
+  const [registering, setRegistering] = useState(false);
+  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerSocials, setRegisterSocials] = useState("");
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchEvent() {
@@ -55,6 +67,65 @@ export default function EventDetailsPage() {
     if (event?.creator_id) fetchHost();
   }, [event?.creator_id]);
 
+  useEffect(() => {
+    async function fetchRegistrations() {
+      if (!params.id) return;
+      setRegLoading(true);
+      setRegError(null);
+      try {
+        const res = await axios.get(`/api/registrations?eventId=${params.id}`);
+        setRegistrations(res.data);
+        // Check if current user is registered
+        if (user?.id && res.data.some((r: any) => r.user_id === user.id)) {
+          setIsRegistered(true);
+        } else {
+          setIsRegistered(false);
+        }
+      } catch (err: any) {
+        setRegError(err.response?.data?.error || err.message || "Failed to fetch registrations");
+      } finally {
+        setRegLoading(false);
+      }
+    }
+    if (params.id && user?.id) fetchRegistrations();
+  }, [params.id, user?.id]);
+
+  const handleRegister = async () => {
+    if (!user?.id || !params.id) return;
+    setRegistering(true);
+    setRegisterError(null);
+    try {
+      await axios.post("/api/registrations", {
+        user_id: user.id,
+        event_id: params.id,
+        email: registerEmail,
+        socials: registerSocials,
+        metadata: null
+      });
+      setIsRegistered(true);
+      setShowRegisterDialog(false);
+      // Refetch registrations to update count
+      const res = await axios.get(`/api/registrations?eventId=${params.id}`);
+      setRegistrations(res.data);
+    } catch (err: any) {
+      setRegisterError(err.response?.data?.error || err.message || "Failed to register");
+    } finally {
+      setRegistering(false);
+    }
+  };
+
+  const handleSave = () => {
+    setIsSaved(!isSaved);
+  };
+
+  const handleShare = () => {
+    navigator.share?.({
+      title: event.title,
+      text: event.description,
+      url: window.location.href
+    }) || navigator.clipboard.writeText(window.location.href);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
@@ -80,24 +151,8 @@ export default function EventDetailsPage() {
 
   const eventDate = new Date(event.date);
   const isUpcoming = eventDate > new Date();
-  const spotsRemaining = event.max_attendee ? event.max_attendee - (event.registrations || 0) : null;
-  const progressPercentage = event.max_attendee ? ((event.registrations || 0) / event.max_attendee) * 100 : 0;
-
-  const handleRegister = () => {
-    setIsRegistered(true);
-  };
-
-  const handleSave = () => {
-    setIsSaved(!isSaved);
-  };
-
-  const handleShare = () => {
-    navigator.share?.({
-      title: event.title,
-      text: event.description,
-      url: window.location.href
-    }) || navigator.clipboard.writeText(window.location.href);
-  };
+  const spotsRemaining = event.max_attendee ? event.max_attendee - registrations.length : null;
+  const progressPercentage = event.max_attendee ? (registrations.length / event.max_attendee) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
@@ -263,7 +318,7 @@ export default function EventDetailsPage() {
 
                 <div className="flex items-center gap-2 text-gray-300 mb-6">
                   <Users className="h-4 w-4" />
-                  <span className="text-sm">{event.registrations} people registered</span>
+                  <span className="text-sm">{regLoading ? "Loading..." : registrations.length} people registered</span>
                 </div>
 
                 {isRegistered ? (
@@ -273,11 +328,11 @@ export default function EventDetailsPage() {
                   </Button>
                 ) : (
                   <Button
-                    onClick={handleRegister}
+                    onClick={() => setShowRegisterDialog(true)}
                     className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-                    disabled={!isUpcoming}
+                    disabled={!isUpcoming || registering}
                   >
-                    {isUpcoming ? "Register Now" : "Event Ended"}
+                    {registering ? "Registering..." : isUpcoming ? "Register Now" : "Event Ended"}
                   </Button>
                 )}
 
@@ -320,6 +375,39 @@ export default function EventDetailsPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Register for Event</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="email"
+              placeholder="Your email address"
+              value={registerEmail}
+              onChange={(e) => setRegisterEmail(e.target.value)}
+              required
+            />
+            <Input
+              type="text"
+              placeholder="Link to your social profile (e.g. Twitter, LinkedIn)"
+              value={registerSocials}
+              onChange={(e) => setRegisterSocials(e.target.value)}
+              required
+            />
+            {registerError && <div className="text-red-600 text-sm">{registerError}</div>}
+          </div>
+          <DialogFooter>
+            <Button onClick={handleRegister} disabled={registering || !registerEmail || !registerSocials}>
+              {registering ? "Registering..." : "Register"}
+            </Button>
+            <Button variant="outline" onClick={() => setShowRegisterDialog(false)} disabled={registering}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
