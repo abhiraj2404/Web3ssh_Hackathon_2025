@@ -144,9 +144,9 @@ export default function EventManagementPage() {
   const confirmedCount = attendances.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
       {/* Header */}
-      <section className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-12">
+      <section className="bg-gradient-to-r from-purple-800 to-blue-900 text-white py-12">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-4 mb-6">
             <Button
@@ -161,13 +161,13 @@ export default function EventManagementPage() {
           </div>
 
           <div className="max-w-4xl">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Event Management</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white">Event Management</h1>
             <h2 className="text-xl text-purple-100 mb-4">{event.title}</h2>
 
             <div className="grid md:grid-cols-3 gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>
+                <Calendar className="h-4 w-4 text-white" />
+                <span className="text-white">
                   {eventDate.toLocaleDateString("en-US", {
                     weekday: "long",
                     year: "numeric",
@@ -177,12 +177,12 @@ export default function EventManagementPage() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>{event.location}</span>
+                <MapPin className="h-4 w-4 text-white" />
+                <span className="text-white">{event.location}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" />
-                <span>NFT: {event.nft_name}</span>
+                <Trophy className="h-4 w-4 text-white" />
+                <span className="text-white">NFT: {event.nft_name}</span>
               </div>
             </div>
           </div>

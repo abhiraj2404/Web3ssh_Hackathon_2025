@@ -72,18 +72,18 @@ export default function DashboardPage() {
   }, [user?.id]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
       {/* Header */}
-      <section className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-12">
+      <section className="bg-gradient-to-r from-purple-800 to-blue-900 text-white py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">Dashboard</h1>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2 text-white">Dashboard</h1>
               <p className="text-purple-100">Manage your events and track performance</p>
             </div>
 
             <Link href="/events/create">
-              <Button size="lg" className="bg-white text-purple-600 hover:bg-white/90 shadow-lg">
+              <Button size="lg" className="bg-white text-purple-700 hover:bg-white/90 shadow-lg">
                 <Plus className="h-5 w-5 mr-2" />
                 Create Event
               </Button>
@@ -96,16 +96,16 @@ export default function DashboardPage() {
         {/* Stats Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
+            <Card key={index} className="hover:shadow-lg transition-shadow duration-300 bg-gray-900/80 border border-gray-800">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                <CardTitle className="text-sm font-medium text-gray-200">{stat.title}</CardTitle>
+                <div className={`p-2 rounded-lg ${stat.bgColor} bg-opacity-20`}>
+                  <stat.icon className={`h-4 w-4 ${stat.color.replace("text-", "text-")} text-opacity-80`} />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
-                <p className="text-xs text-gray-500">{stat.change}</p>
+                <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+                <p className="text-xs text-gray-400">{stat.change}</p>
               </CardContent>
             </Card>
           ))}
@@ -122,8 +122,8 @@ export default function DashboardPage() {
           <TabsContent value="events" className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Events</h2>
-                <p className="text-gray-600">Events you've created and are managing</p>
+                <h2 className="text-2xl font-bold text-white mb-2">Your Events</h2>
+                <p className="text-gray-100">Events you've created and are managing</p>
               </div>
 
               <div className="flex gap-2">
@@ -171,8 +171,8 @@ export default function DashboardPage() {
 
           <TabsContent value="nfts" className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Your NFT Collection</h2>
-              <p className="text-gray-600">Proof-of-attendance NFTs from events you've attended</p>
+              <h2 className="text-2xl font-bold text-whit mb-2">Your NFT Collection</h2>
+              <p className="text-gray-100">Proof-of-attendance NFTs from events you've attended</p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -202,8 +202,8 @@ export default function DashboardPage() {
 
           <TabsContent value="analytics" className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Analytics Overview</h2>
-              <p className="text-gray-600">Track your event performance and engagement</p>
+              <h2 className="text-2xl font-bold text-white mb-2">Analytics Overview</h2>
+              <p className="text-gray-100">Track your event performance and engagement</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -212,14 +212,14 @@ export default function DashboardPage() {
                 <div className="h-64 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <BarChart3 className="h-12 w-12 text-purple-400 mx-auto mb-2" />
-                    <p className="text-gray-500">Chart will be displayed here</p>
+                    <p className="text-gray-100">Chart will be displayed here</p>
                   </div>
                 </div>
               </Card>
 
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Event Performance</h3>
-                <div className="space-y-4">
+                <div className="space-y-4 text-black">
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>

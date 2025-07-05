@@ -8,16 +8,12 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "EventChain - Decentralized Event Platform",
-  description: "Create and manage blockchain-powered events with NFT rewards",
+  description: "Create and manage blockchain-powered events with NFT rewards"
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body className={inter.className}>
         <Providers>
           <Navigation />
